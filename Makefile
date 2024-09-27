@@ -31,7 +31,7 @@ UNIQNAME    = lukemcg
 IDENTIFIER  = 1CAEF3A0FEDD0DEC26BA9808C69D4D22A9962768
 
 # Change 'executable' to match the command name given in the project spec.
-EXECUTABLE  = executable
+EXECUTABLE  = market
 
 # The following line looks for a project's main() in files named project*.cpp,
 # executable.cpp (substituted from EXECUTABLE above), or main.cpp
