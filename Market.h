@@ -78,14 +78,23 @@ struct Order {
     uint32_t quantity = 0;
     uint32_t orderNum = 0; // Used to break ties based on arrival order
 
-    // Constructor
+    // ctor
     Order(uint32_t ts, uint32_t tID, uint32_t sID, bool buy, uint32_t p, uint32_t q, const uint32_t orderN) 
         : timestamp(ts), traderID(tID), stockID(sID), isBuy(buy),
-            price(p), quantity(q), orderNum(orderN) { }
-
-    // You may add additional member functions if needed
+            price(p), quantity(q), orderNum(orderN) {}
 };
 
+// fast median
+class MedianPriorityQueue {
+    private:
+        std::priority_queue<int> maxHeap; // smaller half - no comp makes it an auto MaxPQ
+        std::priority_queue<int, std::vector<int>, std::greater<int>> minHeap; // larger half
+        void balanceHeaps();
+    public:
+        void insert(int num);
+        int getMedian();
+        void clear();
+};
 
 // ----------------------------------------------------------------------- //
 //                     Market Class Definitions!!!                        //
@@ -94,7 +103,7 @@ struct Order {
 class Market {
 public:
     Market(uint32_t numStocks_in, uint32_t numTraders_in, bool v, bool m, bool tI, bool tT); // x
-    void proccess_input(std::istringstream &ss); // x
+    void proccess_input(std::stringstream &ss); // x
     void printEndOfDaySummary(); // x
     void printTraderInfo(); // x
     void printTimeTravelerInfo(); // x
@@ -118,21 +127,12 @@ private:
     std::vector<Trader> traders;
     std::vector<std::priority_queue<Order, std::vector<Order>, BuyOrderComparator>> buyOrders;
     std::vector<std::priority_queue<Order, std::vector<Order>, SellOrderComparator>> sellOrders;
-    // fast median
-    class MedianPriorityQueue {
-        private:
-            std::priority_queue<int> maxHeap; // smaller half - no comp makes it an auto MaxPQ
-            std::priority_queue<int, std::vector<int>, std::greater<int>> minHeap; // larger half
-            void balanceHeaps();
-        public:
-            void insert(int num);
-            double getMedian();
-    };
+    std::vector<MedianPriorityQueue> medianPQ;
+    
 
     // private member functions
-    void matchOrders(uint32_t stockID);
-    void outputMedianPrices();
-    
+    void matchOrders(uint32_t stockID); // x
+    void outputMedianPrices(uint32_t time); // x
     void updateTimeTravelers(const Order& order); // x
     void verbose_helper(uint32_t trader, uint32_t shares, uint32_t stock, uint32_t seller, uint32_t price); // x
 
@@ -150,9 +150,9 @@ Market::Market(uint32_t numStocks_in, uint32_t numTraders_in, bool v, bool m, bo
         buyOrders(numStocks), sellOrders(numStocks) {
         
 
-    // resize our traveler vector IF AND ONLY IF the mode is used, else its a waste...
+    // resize our traveler & median vectors IF AND ONLY IF the mode is used, else its a waste...
     if (timeTravelers) time_traveler_tracker.resize(numStocks);
-
+    if (median) medianPQ.resize(numStocks);
 
     // Initialize traders with correct IDs
     for (int i = 0; i < numTraders; ++i) {
@@ -164,7 +164,7 @@ Market::Market(uint32_t numStocks_in, uint32_t numTraders_in, bool v, bool m, bo
 } // Market ctor
 
 
-void Market::proccess_input (std::istringstream &ss) {
+void Market::proccess_input (std::stringstream &ss) {
     uint32_t timestamp = 0;
     std::string buySell = "";
     char tChar = '\0';
@@ -206,7 +206,7 @@ void Market::proccess_input (std::istringstream &ss) {
 
         // Handle timestamp change
         if (timestamp != currentTime) {
-            if (median) outputMedianPrices(); // call Median at each time change
+            if (median) outputMedianPrices(currentTime); // call Median at each time change
             currentTime = timestamp;
         }
 
@@ -235,7 +235,7 @@ void Market::proccess_input (std::istringstream &ss) {
 void Market::printEndOfDaySummary() {
     std::cout << "---End of Day---\n";
     std::cout << "Trades Completed: " << tradesCompleted << "\n";
-}
+} // printEODSummary
 
 // Trader info output
 void Market::printTraderInfo() {
@@ -245,7 +245,7 @@ void Market::printTraderInfo() {
                   << trader.totalBought << " and sold " << trader.totalSold
                   << " for a net transfer of $" << trader.netTransfer << "\n";
     }
-}
+} // printTraderInfo
 
 
 // ----------------------------------------------------------------------- //
@@ -255,34 +255,36 @@ void Market::printTraderInfo() {
 
 // Matching logic
 void Market::matchOrders(uint32_t stockID) {
-    auto& buyPQ = buyOrders[stockID];
+    auto& buyPQ = buyOrders[stockID]; // call the vector position's (stockID's) priority queue
     auto& sellPQ = sellOrders[stockID];
 
     while (!buyPQ.empty() && !sellPQ.empty()) {
         Order buyOrder = buyPQ.top();
         Order sellOrder = sellPQ.top();
 
-        if (sellOrder.price > buyOrder.price) {
-            // No match possible
+        if (sellOrder.price > buyOrder.price) { // price is higher than the buyer's willing to pay
+            // no trade made
             break;
         }
 
         // Determine trade price
-        uint32_t tradePrice;
+        uint32_t trade_price;
+
+        // if the buy order comes after the order was listed as a sell, take the seller's list price
         if (sellOrder.timestamp < buyOrder.timestamp ||
             (sellOrder.timestamp == buyOrder.timestamp &&
              sellOrder.orderNum < buyOrder.orderNum)) {
-            tradePrice = sellOrder.price;
-        } else {
-            tradePrice = buyOrder.price;
+            trade_price = sellOrder.price;
+        } else { // else, take the buyers price offer
+            trade_price = buyOrder.price;
         }
 
-        // Determine trade quantity
+        // Determine trade quantity - take minimum of the buyers/sellers
         uint32_t tradeQuantity = std::min(buyOrder.quantity, sellOrder.quantity);
 
         // Update trader statistics
-        traders[buyOrder.traderID].bought(tradeQuantity, tradePrice);
-        traders[sellOrder.traderID].sold(tradeQuantity, tradePrice);
+        traders[buyOrder.traderID].bought(tradeQuantity, trade_price);
+        traders[sellOrder.traderID].sold(tradeQuantity, trade_price);
 
         // Update quantities
         buyOrder.quantity -= tradeQuantity;
@@ -292,8 +294,7 @@ void Market::matchOrders(uint32_t stockID) {
 
         // Update median data
         if (median) {
-            // Add tradePrice to median data structures
-            // ...
+            medianPQ[stockID].insert(trade_price);
         }
 
         // Verbose output
@@ -301,28 +302,40 @@ void Market::matchOrders(uint32_t stockID) {
             std::cout << "Trader " << buyOrder.traderID << " purchased "
                       << tradeQuantity << " shares of Stock " << stockID
                       << " from Trader " << sellOrder.traderID << " for $"
-                      << tradePrice << "/share\n";
+                      << trade_price << "/share\n";
         }
 
-        // Remove or update orders in priority queues
-        buyPQ.pop();
-        sellPQ.pop();
+        // Remove the order from the PQ if no more quantity
+        if (buyOrder.quantity == 0) buyPQ.pop();
+        if (sellOrder.quantity == 0) sellPQ.pop();
 
-        if (buyOrder.quantity > 0) {
-            buyPQ.push(buyOrder);
-        }
-        if (sellOrder.quantity > 0) {
-            sellPQ.push(sellOrder);
-        }
-    }
-}
+        // other option... but I think ^^ is faster and just as accurate
+        // buyPQ.pop();
+        // sellPQ.pop();
+
+        // if (buyOrder.quantity > 0) {
+        //     buyPQ.push(buyOrder);
+        // }
+        // if (sellOrder.quantity > 0) {
+        //     sellPQ.push(sellOrder);
+        // }
+
+    } // while
+} // match_orders
 
 // Output median prices
-void Market::outputMedianPrices() {
-    // For each stock, calculate and output the median if trades have occurred
-    // Implement efficient median calculation using two heaps per stock
-    // ...
-}
+void Market::outputMedianPrices(uint32_t time) {
+    for (int i = 0; i < numStocks; i++) {
+        MedianPriorityQueue curr = medianPQ[i];
+        int value = curr.getMedian();
+
+        if (value == -1) continue; // if no median, then continue looping
+
+        std::cout << "Median match price of Stock " << i << " at time " 
+                  << time << " is $" << curr.getMedian() << "\n";
+        curr.clear();
+    } 
+} // outputMedianPrices
 
 // Update time traveler data
 void Market::updateTimeTravelers(const Order& order) {
@@ -406,12 +419,12 @@ void Market::printTimeTravelerInfo() {
             std::cout << "A time traveler could not make a profit on Stock " << stockID << "\n";
         }
     } // for
-}
+} //printTTinfo
 
 void Market::verbose_helper(uint32_t trader, uint32_t shares, uint32_t stock, uint32_t seller, uint32_t price) {
     std::cout << "Trader " << trader << " purchased " << shares << " shares of Stock " 
               << stock << " from Trader " << seller << " for $" << price << "/share\n";
-}
+} // verbose helper
 
 
 
@@ -420,7 +433,7 @@ void Market::verbose_helper(uint32_t trader, uint32_t shares, uint32_t stock, ui
 // --------------------------------------------------------------------- //
 
 
-void Market::MedianPriorityQueue::balanceHeaps() {
+void MedianPriorityQueue::balanceHeaps() {
     if (maxHeap.size() > minHeap.size() + 1) {
         minHeap.push(maxHeap.top());
         maxHeap.pop();
@@ -428,25 +441,38 @@ void Market::MedianPriorityQueue::balanceHeaps() {
         maxHeap.push(minHeap.top());
         minHeap.pop();
     }
-}
+} // fastMedian - balanceHeaps
 
-void Market::MedianPriorityQueue::insert(int num) {
+void MedianPriorityQueue::insert(int num) {
     if (maxHeap.empty() || num < maxHeap.top()) {
         maxHeap.push(num);
     } else {
         minHeap.push(num);
     }
         balanceHeaps();
-}
+} // fastMedian - insert
 
-double Market::MedianPriorityQueue::getMedian() {
+int MedianPriorityQueue::getMedian() {
+    // return -1 if no median exists
+    if (maxHeap.empty() && minHeap.empty()) return -1;
+
     if (maxHeap.size() == minHeap.size()) {
-        return (maxHeap.top() + minHeap.top()) / 2.0;
+        return (maxHeap.top() + minHeap.top()) / 2;
     } else if (maxHeap.size() > minHeap.size()) {
         return maxHeap.top();
     } else {
         return minHeap.top();
     }
-}
+} // fastMedian - getMedian
+
+void MedianPriorityQueue::clear() {
+    while (!maxHeap.empty()) {
+        maxHeap.pop();
+    }
+    while (!minHeap.empty()) {
+        minHeap.pop();
+    }
+    return;
+} // fastmedian - clear()
 
 #endif // MARKET_HPP

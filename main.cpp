@@ -55,13 +55,14 @@ int main(int argc, char *argv[]) {
     std::getline(std::cin, line); // gets rid of comment
     std::getline(std::cin, line); // reads mode
     std::cin >> traders >> stocks; // reads number of traders and stocks
-    std::istringstream ss; // creates a stream if we have PR mode
+    std::stringstream ss; // creates a stream if we have PR mode
 
     // create an instance of Market Class, "market"
     Market market(stocks, traders, verbose, median, traderInfo, timeTravelers);
 
     if (line == "TL") { // process the rest of our cin stream
-        market.proccess_input(std::cin);
+        ss << std::cin.rdbuf();  // Read all data from std::cin into the stringstream
+        market.proccess_input(ss);
         return;
     } else if (line == "PR") { // proccess PR mode
         std::string aux = ""; // used as junk read for preceeding symbols & words
