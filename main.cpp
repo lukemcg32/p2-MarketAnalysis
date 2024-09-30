@@ -2,8 +2,8 @@
 #include <getopt.h>
 #include <iostream>
 #include <sstream>
-#include <Market.hpp
-#include "P2random.hpp" // Include the pseudorandom generator header
+#include "Market.h"
+#include "P2random.h" // Include the pseudorandom generator header
 
 
   // Option definitions for getopt_long
@@ -20,10 +20,11 @@ int main(int argc, char *argv[]) {
     bool median = false;
     bool traderInfo = false;
     bool timeTravelers = false;
+    int gotopt;
 
     // Parse options using getopt_long
-    while ((opt = getopt_long(argc, argv, "vmit", long_options, nullptr)) != -1) {
-        switch (opt) {
+    while ((gotopt = getopt_long(argc, argv, "vmit", long_options, nullptr)) != -1) {
+        switch (gotopt) {
             case 'v': 
                 verbose = true; // verbose
                 break;
@@ -48,29 +49,28 @@ int main(int argc, char *argv[]) {
 
     // prelim cin for our info
     std::string line = "";
-    std::string = "";
     int traders = 0;
     int stocks = 0;
 
-    std::getline(cin, line); // gets rid of comment
-    std::getline(cin, line); // reads mode
-    cin >> traders >> stocks; // reads number of traders and stocks
+    std::getline(std::cin, line); // gets rid of comment
+    std::getline(std::cin, line); // reads mode
+    std::cin >> traders >> stocks; // reads number of traders and stocks
     std::istringstream ss; // creates a stream if we have PR mode
 
     // create an instance of Market Class, "market"
     Market market(stocks, traders, verbose, median, traderInfo, timeTravelers);
 
     if (line == "TL") { // process the rest of our cin stream
-        market.proccess_input(cin, mode);
+        market.proccess_input(std::cin);
         return;
     } else if (line == "PR") { // proccess PR mode
         std::string aux = ""; // used as junk read for preceeding symbols & words
         size_t seed = 0;
         size_t orders = 0;
         size_t a_rate = 0;
-        cin >> aux >> seed >> aux >> orders >> aux >> a_rate;
+        std::cin >> aux >> seed >> aux >> orders >> aux >> a_rate;
         P2random::PR_init(ss, seed, traders, stocks, orders, a_rate);
-        market.process_input(ss, mode);
+        market.proccess_input(ss);
     } else { // neither mode
         std::cerr << "Neither Input Mode Read\n";
         exit(1);

@@ -329,7 +329,7 @@ help:
 #
 # ADD YOUR OWN DEPENDENCIES HERE
 
-lab02.o: evaluate.cpp evaluate.hpp testAnyfix.cpp
+project2a: Market.hpp P2random.h main.cpp
 ######################
 # TODO (end) #
 ######################

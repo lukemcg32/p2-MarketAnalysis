@@ -5,42 +5,37 @@
 #include <vector>
 #include <queue>
 #include <iostream>
-#include "Order.hpp"
-#include "Trader.hpp"
-#include "P2random.h"
+#include <sstream>
 
 
 // ----------------------------------------------------------------------- //
 //               Structs with Comparators and containers!                 //
 // --------------------------------------------------------------------- //
 
-// Comparators for priority queues
-struct BuyOrderComparator operator()(const Order& a, const Order& b) {
-    if (a.price == b.price) {
-        return a.arrivalOrder > b.arrivalOrder;
+
+struct BuyOrderComparator {
+    bool operator()(const Order& a, const Order& b) {
+        if (a.price == b.price) return a.orderNum > b.orderNum;
+        return a.price < b.price; // Higher price has higher priority
     }
-    return a.price < b.price; // Higher price has higher priority
 };
 
-struct SellOrderComparator operator()(const Order& a, const Order& b) {
-    if (a.price == b.price) {
-        return a.arrivalOrder > b.arrivalOrder;
+struct SellOrderComparator {
+    bool operator()(const Order& a, const Order& b) {
+        if (a.price == b.price) return a.orderNum > b.orderNum;
+        return a.price > b.price; // Lower price has higher priority
     }
-    return a.price > b.price; // Lower price has higher priority
 };
 
 // helper for time traveler mode
 // sell = true : sell order (can buy it)
-struct time_traveler() { // index in vector will be stock#
-    /*word_bank = { 
-        'n': "No Trades"
+struct time_traveler { // index in vector will be stock#
+    /*  'n': "No Trades"
         'b': "Can Buy"
         'c': "Complete"
         'p': "Potential"
 
-
-        mode = 'c' || mode = 'p' in order to find a time_traveler for the stock
-    } */
+        mode = 'c' || mode = 'p' in order to find a time_traveler for the stock */
     char mode = 'n';
 
     size_t sell_time = 0;
@@ -52,13 +47,15 @@ struct time_traveler() { // index in vector will be stock#
 };
 
 // no need for trader ID, because we can represent it as the index of our vector
+// we'll keep it for now
 struct Trader {
+    uint32_t traderID;
     uint32_t totalBought;
     uint32_t totalSold;
     long long netTransfer; // Use long long for larger sums
 
     // Constructor
-    Trader() : totalBought(0), totalSold(0), netTransfer(0) {}
+    Trader(uint32_t tID) : traderID(tID), totalBought(0), totalSold(0), netTransfer(0) {}
 
     // Functions to update trader's stats
     void bought(uint32_t quantity, uint32_t price) {
@@ -73,16 +70,16 @@ struct Trader {
 };
 
 struct Order {
-    int timestamp = 0;
-    int traderID = 0;
-    int stockID = 0;
+    uint32_t timestamp = 0;
+    uint32_t traderID = 0;
+    uint32_t stockID = 0;
     bool isBuy = true; // true for buy, false for sell
-    int price = 0;
-    int quantity = 0;
-    int orderNum = 0; // Used to break ties based on arrival order
+    uint32_t price = 0;
+    uint32_t quantity = 0;
+    uint32_t orderNum = 0; // Used to break ties based on arrival order
 
     // Constructor
-    Order(int ts, int tID, int sID, bool buy, int p, int q, int orderN) 
+    Order(uint32_t ts, uint32_t tID, uint32_t sID, bool buy, uint32_t p, uint32_t q, const uint32_t orderN) 
         : timestamp(ts), traderID(tID), stockID(sID), isBuy(buy),
             price(p), quantity(q), orderNum(orderN) { }
 
@@ -96,38 +93,48 @@ struct Order {
 
 class Market {
 public:
-    Market(int numStocks_in, int numTraders_in, bool v, bool m, bool tI, bool tT);
-
-    void proccess_input (std::istringstream &ss);
-    void printEndOfDaySummary();
-    void printTraderInfo();
+    Market(uint32_t numStocks_in, uint32_t numTraders_in, bool v, bool m, bool tI, bool tT); // x
+    void proccess_input(std::istringstream &ss); // x
+    void printEndOfDaySummary(); // x
+    void printTraderInfo(); // x
+    void printTimeTravelerInfo(); // x
 
 private:
     // read from input
-    int numStocks;
-    int numTraders;
+    uint32_t numStocks;
+    uint32_t numTraders;
     bool verbose = false;
     bool median = false;
     bool traderInfo = false;
     bool timeTravelers = false;
 
     // member values that WILL change throughout
-    int currentTime;
-    int tradesCompleted;
-    int arrivalCounter; // For tie-breaking based on arrival order
+    uint32_t currentTime;
+    uint32_t tradesCompleted;
+    uint32_t arrivalCounter; // For tie-breaking based on arrival order
 
     // Data structures
     std::vector<time_traveler> time_traveler_tracker;
     std::vector<Trader> traders;
     std::vector<std::priority_queue<Order, std::vector<Order>, BuyOrderComparator>> buyOrders;
     std::vector<std::priority_queue<Order, std::vector<Order>, SellOrderComparator>> sellOrders;
+    // fast median
+    class MedianPriorityQueue {
+        private:
+            std::priority_queue<int> maxHeap; // smaller half - no comp makes it an auto MaxPQ
+            std::priority_queue<int, std::vector<int>, std::greater<int>> minHeap; // larger half
+            void balanceHeaps();
+        public:
+            void insert(int num);
+            double getMedian();
+    };
 
     // private member functions
-    void matchOrders(int stockID);
+    void matchOrders(uint32_t stockID);
     void outputMedianPrices();
-    void updateTimeTravelers(const Order& order);
-    void printTimeTravelerInfo();
-    void verbose_helper(int trader, int shares, int stock, int seller, int price);
+    
+    void updateTimeTravelers(const Order& order); // x
+    void verbose_helper(uint32_t trader, uint32_t shares, uint32_t stock, uint32_t seller, uint32_t price); // x
 
 };
     
@@ -136,14 +143,14 @@ private:
 // --------------------------------------------------------------------- //
 
 
-Market::Market(int numStocks_in, int numTraders_in, bool v, bool m, bool tI, bool tT) : 
+Market::Market(uint32_t numStocks_in, uint32_t numTraders_in, bool v, bool m, bool tI, bool tT) : 
         numStocks(numStocks_in), numTraders(numTraders_in), verbose(v), median(m),
         traderInfo(tI), timeTravelers(tT), currentTime(0), tradesCompleted(0), 
         arrivalCounter(0), traders(numTraders, Trader(0)), 
         buyOrders(numStocks), sellOrders(numStocks) {
         
 
-    // resize our traveler vector iff the mode is used, else its a waste...
+    // resize our traveler vector IF AND ONLY IF the mode is used, else its a waste...
     if (timeTravelers) time_traveler_tracker.resize(numStocks);
 
 
@@ -158,15 +165,16 @@ Market::Market(int numStocks_in, int numTraders_in, bool v, bool m, bool tI, boo
 
 
 void Market::proccess_input (std::istringstream &ss) {
-    int timestamp = 0;
+    uint32_t timestamp = 0;
     std::string buySell = "";
     char tChar = '\0';
     char sChar = '\0';
     char aux = '\0';
-    int traderID = 0;
-    int stockID = 0;
-    int price = 0;
-    int quantity = 0;
+    uint32_t traderID = 0;
+    uint32_t stockID = 0;
+    uint32_t price = 0;
+    uint32_t quantity = 0;
+    bool isBuy = false;
 
     while (ss >> timestamp) { // time stamp auto read by while loop
 
@@ -174,7 +182,7 @@ void Market::proccess_input (std::istringstream &ss) {
             >> stockID >> aux >> price >> aux >> quantity; // check that read works!!
 
         // for debug read in test
-        cout << "read in... Time: " << timestamp << ", T" << traderID << ", S" 
+        std::cout << "read in... Time: " << timestamp << ", T" << traderID << ", S" 
              << stockID << ", $" << price << ", #" << quantity << "\n";
 
 
@@ -204,8 +212,8 @@ void Market::proccess_input (std::istringstream &ss) {
 
 
         // CHECK REST
-        bool isBuy = (buySell == "BUY");
-        Order newOrder(timestamp, traderID, stockID, buySell, price, quantity, arrivalCounter++);
+        isBuy = (buySell == "BUY");
+        Order newOrder(timestamp, traderID, stockID, isBuy, price, quantity, arrivalCounter++);
     
         // Update time traveler data
         if (timeTravelers) {
@@ -240,18 +248,13 @@ void Market::printTraderInfo() {
 }
 
 
-
-
-
-
-
 // ----------------------------------------------------------------------- //
 //                 PRIVATE MEMBER FUCNTION IMPLEMENTATIONS                //
 // --------------------------------------------------------------------- //
 
 
 // Matching logic
-void Market::matchOrders(int stockID) {
+void Market::matchOrders(uint32_t stockID) {
     auto& buyPQ = buyOrders[stockID];
     auto& sellPQ = sellOrders[stockID];
 
@@ -265,17 +268,17 @@ void Market::matchOrders(int stockID) {
         }
 
         // Determine trade price
-        int tradePrice;
+        uint32_t tradePrice;
         if (sellOrder.timestamp < buyOrder.timestamp ||
             (sellOrder.timestamp == buyOrder.timestamp &&
-             sellOrder.arrivalOrder < buyOrder.arrivalOrder)) {
+             sellOrder.orderNum < buyOrder.orderNum)) {
             tradePrice = sellOrder.price;
         } else {
             tradePrice = buyOrder.price;
         }
 
         // Determine trade quantity
-        int tradeQuantity = std::min(buyOrder.quantity, sellOrder.quantity);
+        uint32_t tradeQuantity = std::min(buyOrder.quantity, sellOrder.quantity);
 
         // Update trader statistics
         traders[buyOrder.traderID].bought(tradeQuantity, tradePrice);
@@ -323,43 +326,13 @@ void Market::outputMedianPrices() {
 
 // Update time traveler data
 void Market::updateTimeTravelers(const Order& order) {
-
-/*
-1. Start in "No trades", where you can buy a stock
-
-2. If you find a sell order, switch to "Can Buy"
-    a.  if you get another stock you can buy, buy it if it's lower than we bought ours for
-
-3. If you can sell (fill a buy order) for higher than you bought it for, mark as Complete" 
-    a.  if you get another stock you can SELL, SELL it if it's higher than we already sold for
-
-4. If you find another sell order (you can buy) and its less than we bought ours for, switch to "potential" mode
-    a.  repeat 2 - 3
-    b.  once done with step three, compare the amount gained
-    c.  if amount gained is MORE than we previously had, change our potential traveler to our traveler and set potential's mode to "No trades"
-    d.  if amount gained is NOT MORE than we had, remain in "Can buy mode until we can turn a bigger profit"
-    e.  whenever we get a new buy order...compare it to our sell_price and potential sell price!!!
-    f.  stay in potential.mode = 'b' until I can make more than before
-
-        'n': "No Trades"        
-        'b': "Can Buy"            
-        'c': "Complete"           
-        'p': "Potential"        
-
-    char mode = 'n';
-    size_t sell_time = 0;
-    size_t buy_time = 0;
-    size_t buy_price = 0; // first price will be lower - used for buy info
-    size_t sell_price = 0; // first price should be > 0 - used for sell price
-    time_traveler potential;
-*/ 
-    int id = order.stockID;
+    uint32_t id = order.stockID;
     time_traveler curr_stock = time_traveler_tracker[id];
 
     // !.isBuy means its a sell order (TT can buy it)
     if (!order.isBuy) {
         // if haven't bought yet OR this price is cheaper than what we bought for...
-        if (curr_stock.mode == 'n' || (curr_stock.mode == 'b' && curr_stock.buy_price > order.price)) {
+        if (curr_stock.mode == 'n' || (curr_stock.mode == 'b' && curr_stock.buy_price < order.price)) {
             curr_stock.buy_price = order.price;
             curr_stock.buy_time = order.timestamp;
             curr_stock.mode = 'b';
@@ -373,7 +346,16 @@ void Market::updateTimeTravelers(const Order& order) {
             curr_stock.mode = 'p';
             return;
         }
-    } // if we can buy
+
+        // if we're in potential mode and we get a stock that is less than our potential mode holder
+        if (curr_stock.mode == 'p' && curr_stock.potential_buy_price > order.price) {
+            curr_stock.potential_buy_price = order.price;
+            curr_stock.potential_buy_time = order.timestamp;
+            // already in potential mode
+            return;
+        }
+        
+    } // if <we can buy>
 
      // .isBuy (TT can sell to this fool)
     if (order.isBuy) {
@@ -408,30 +390,63 @@ void Market::updateTimeTravelers(const Order& order) {
         }
 
     } // if we can sell
-} 
+} // updateTT
 
 // Time traveler info output
 void Market::printTimeTravelerInfo() {
     std::cout << "---Time Travelers---\n";
-    for (int stockID = 0; stockID < numStocks; ++stockID) {
-
-        // get our current stock in "curr"
+    for (uint32_t stockID = 0; stockID < numStocks; ++stockID) {
         auto curr = time_traveler_tracker[stockID];
-
-        // check that both times have been initialized and that we didn't buy after our sell
-        if (curr.buy_time != 9999 || curr.sell_time != 9999 || curr.buy_time > curr.sell_time) {
+        // check if we have something complete... (in p/c mode)
+        if (curr.mode == 'p' || curr.mode == 'c') {
             std::cout << "A time traveler would buy Stock " << stockID << " at time " << curr.buy_time << " for " 
                       << curr.buy_price << " and sell it at time " <<  curr.sell_time << " for " << curr.sell_price << "\n";
-                      continue;
+        } 
+        else { // else, we have no TT info avaliable for the stock we're at
+            std::cout << "A time traveler could not make a profit on Stock " << stockID << "\n";
         }
-        // else, we have no TT info avaliable for the stock we're at
-        std::cout << "A time traveler could not make a profit on Stock " << stockID << "\n";
     } // for
 }
 
-void Market::verbose_helper(int trader, int shares, int stock, int seller, int price) {
-    std::cout << "Trader " << trader << " purchased " << sNum << " shares of Stock " 
+void Market::verbose_helper(uint32_t trader, uint32_t shares, uint32_t stock, uint32_t seller, uint32_t price) {
+    std::cout << "Trader " << trader << " purchased " << shares << " shares of Stock " 
               << stock << " from Trader " << seller << " for $" << price << "/share\n";
+}
+
+
+
+// ----------------------------------------------------------------------- //
+//                 MedianPriorityQueue Implementations                    //
+// --------------------------------------------------------------------- //
+
+
+void Market::MedianPriorityQueue::balanceHeaps() {
+    if (maxHeap.size() > minHeap.size() + 1) {
+        minHeap.push(maxHeap.top());
+        maxHeap.pop();
+    } else if (minHeap.size() > maxHeap.size() + 1) {
+        maxHeap.push(minHeap.top());
+        minHeap.pop();
+    }
+}
+
+void Market::MedianPriorityQueue::insert(int num) {
+    if (maxHeap.empty() || num < maxHeap.top()) {
+        maxHeap.push(num);
+    } else {
+        minHeap.push(num);
+    }
+        balanceHeaps();
+}
+
+double Market::MedianPriorityQueue::getMedian() {
+    if (maxHeap.size() == minHeap.size()) {
+        return (maxHeap.top() + minHeap.top()) / 2.0;
+    } else if (maxHeap.size() > minHeap.size()) {
+        return maxHeap.top();
+    } else {
+        return minHeap.top();
+    }
 }
 
 #endif // MARKET_HPP
