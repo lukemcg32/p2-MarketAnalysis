@@ -214,19 +214,25 @@ void Market::process_input_TL() {
 
         // CHECK REST
         bool isBuy = (buySell == "BUY");
-        Order newOrder(timestamp, traderID, stockID, isBuy, price, quantity, arrivalCounter++);
+        // Order newOrder(timestamp, traderID, stockID, isBuy, price, quantity, arrivalCounter++);
+
+        
     
         // Update time traveler data
         if (timeTravelers) {
+            Order newOrder(timestamp, traderID, stockID, isBuy, price, quantity, arrivalCounter++);
             updateTimeTravelers(newOrder);
+            // updateTimeTravelers.emplace(timestamp, traderID, stockID, isBuy, price, quantity, arrivalCounter++);
         }
 
         // Add order to market and attempt matching
         if (isBuy) {
-            buyOrders[stockID].push(newOrder);
+            buyOrders[stockID].emplace(timestamp, traderID, stockID, isBuy, price, quantity, arrivalCounter++);
+            // buyOrders[stockID].push(newOrder);
             matchOrders(stockID);
         } else {
-            sellOrders[stockID].push(newOrder);
+            sellOrders[stockID].emplace(timestamp, traderID, stockID, isBuy, price, quantity, arrivalCounter++);
+            // sellOrders[stockID].push(newOrder);
             matchOrders(stockID);
         }
     } // while
@@ -411,30 +417,29 @@ void Market::outputMedianPrices(uint32_t time) {
 // Update time traveler data
 void Market::updateTimeTravelers(const Order& order) {
     uint32_t id = order.stockID;
-    time_traveler curr_stock = time_traveler_tracker[id];
 
     // !.isBuy means its a sell order (TT can buy it)
     if (!order.isBuy) {
         // if haven't bought yet OR this price is cheaper than what we bought for...
-        if (curr_stock.mode == 'n' || (curr_stock.mode == 'b' && curr_stock.buy_price < order.price)) {
-            curr_stock.buy_price = order.price;
-            curr_stock.buy_time = order.timestamp;
-            curr_stock.mode = 'b';
+        if (time_traveler_tracker[id].mode == 'n' || (time_traveler_tracker[id].mode == 'b' && time_traveler_tracker[id].buy_price < order.price)) {
+            time_traveler_tracker[id].buy_price = order.price;
+            time_traveler_tracker[id].buy_time = order.timestamp;
+            time_traveler_tracker[id].mode = 'b';
             return;
         }
 
         // if in c mode and price is cheaper than what we bought for... 
-        if ( (curr_stock.mode) == 'c' && (order.price < curr_stock.buy_price) ) {
-            curr_stock.potential_buy_price = order.price;
-            curr_stock.potential_buy_time = order.timestamp;
-            curr_stock.mode = 'p';
+        if ( (time_traveler_tracker[id].mode) == 'c' && (order.price < time_traveler_tracker[id].buy_price) ) {
+            time_traveler_tracker[id].potential_buy_price = order.price;
+            time_traveler_tracker[id].potential_buy_time = order.timestamp;
+            time_traveler_tracker[id].mode = 'p';
             return;
         }
 
         // if we're in potential mode and we get a stock that is less than our potential mode holder
-        if (curr_stock.mode == 'p' && curr_stock.potential_buy_price > order.price) {
-            curr_stock.potential_buy_price = order.price;
-            curr_stock.potential_buy_time = order.timestamp;
+        if (time_traveler_tracker[id].mode == 'p' && time_traveler_tracker[id].potential_buy_price > order.price) {
+            time_traveler_tracker[id].potential_buy_price = order.price;
+            time_traveler_tracker[id].potential_buy_time = order.timestamp;
             // already in potential mode
             return;
         }
@@ -443,33 +448,32 @@ void Market::updateTimeTravelers(const Order& order) {
 
      // .isBuy (TT can sell to this fool)
     if (order.isBuy) {
-
         // if haven't bought anything yet
-        if (curr_stock.mode == 'n') return;
+        if (time_traveler_tracker[id].mode == 'n') return;
 
         // if haven't sold yet and is selling for more than we bought for OR if we're in 'c' and its selling for more than we sold ours for
-        if ( (curr_stock.mode == 'b' && curr_stock.buy_price < order.price) || (curr_stock.mode == 'c' && curr_stock.sell_price < order.price) ) {
-            curr_stock.sell_price = order.price;
-            curr_stock.sell_time = order.timestamp;
-            curr_stock.mode = 'c';
+        if ( (time_traveler_tracker[id].mode == 'b' && time_traveler_tracker[id].buy_price < order.price) || (time_traveler_tracker[id].mode == 'c' && time_traveler_tracker[id].sell_price < order.price) ) {
+            time_traveler_tracker[id].sell_price = order.price;
+            time_traveler_tracker[id].sell_time = order.timestamp;
+            time_traveler_tracker[id].mode = 'c';
             return;
         }
 
         // if in potential mode and an order comes along that can earn more than what we already have, change it to our main and put into 'c'
         // !!!might cause issues with unsigned ints!!!
-        if ( curr_stock.mode == 'p' && (order.price - curr_stock.potential_buy_price) > (curr_stock.sell_price - curr_stock.buy_price) ) {
-            curr_stock.buy_price = curr_stock.potential_buy_price;
-            curr_stock.buy_time = curr_stock.potential_buy_time;
-            curr_stock.sell_price = order.price;
-            curr_stock.sell_time = order.timestamp;
-            curr_stock.mode = 'c';
+        if ( time_traveler_tracker[id].mode == 'p' && (order.price - time_traveler_tracker[id].potential_buy_price) > (time_traveler_tracker[id].sell_price - time_traveler_tracker[id].buy_price) ) {
+            time_traveler_tracker[id].buy_price = time_traveler_tracker[id].potential_buy_price;
+            time_traveler_tracker[id].buy_time = time_traveler_tracker[id].potential_buy_time;
+            time_traveler_tracker[id].sell_price = order.price;
+            time_traveler_tracker[id].sell_time = order.timestamp;
+            time_traveler_tracker[id].mode = 'c';
             return;
         }
 
         // if in potential mode and a lesser bid value comes through
-        if (curr_stock.mode == 'p' && curr_stock.potential_buy_price > order.price) {
-            curr_stock.potential_buy_price = order.price;
-            curr_stock.potential_buy_time = order.timestamp;
+        if (time_traveler_tracker[id].mode == 'p' && time_traveler_tracker[id].potential_buy_price > order.price) {
+            time_traveler_tracker[id].potential_buy_price = order.price;
+            time_traveler_tracker[id].potential_buy_time = order.timestamp;
             return;
         }
 
@@ -483,10 +487,12 @@ void Market::printTimeTravelerInfo() {
         auto curr = time_traveler_tracker[stockID];
         // check if we have something complete... (in p/c mode)
         if (curr.mode == 'p' || curr.mode == 'c') {
-            std::cout << "A time traveler would buy Stock " << stockID << " at time " << curr.buy_time << " for " 
-                      << curr.buy_price << " and sell it at time " <<  curr.sell_time << " for " << curr.sell_price << "\n";
+            std::cout << "A time traveler would buy Stock " << stockID << " at time " << curr.buy_time << " for $" 
+                      << curr.buy_price << " and sell it at time " <<  curr.sell_time << " for $" << curr.sell_price << "\n";
         } 
         else { // else, we have no TT info avaliable for the stock we're at
+            std::cout << stockID << " mode: " << curr.mode << " buy_time: " << curr.buy_time << " buy_price: "
+                      << curr.buy_price << " sell_time: " <<  curr.sell_time << " sel__price: " << curr.sell_price << "\n";
             std::cout << "A time traveler could not make a profit on Stock " << stockID << "\n";
         }
     } // for
