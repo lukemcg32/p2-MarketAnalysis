@@ -28,7 +28,7 @@ UNIQNAME    = lukemcg
 
 # Change the right hand side of the identifier to match the project identifier
 # given in the project or lab specification.
-IDENTIFIER  = 1CAEF3A0FEDD0DEC26BA9808C69D4D22A9962768
+IDENTIFIER  = 0E04A31E0D60C01986ACB20081C9D8722A1899B6
 
 # Change 'executable' to match the command name given in the project spec.
 EXECUTABLE  = market
@@ -329,7 +329,7 @@ help:
 #
 # ADD YOUR OWN DEPENDENCIES HERE
 
-project2a: Market.hpp P2random.h main.cpp
+project2a: Market.hpp main.cpp
 ######################
 # TODO (end) #
 ######################

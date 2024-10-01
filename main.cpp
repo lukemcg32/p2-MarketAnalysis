@@ -46,45 +46,45 @@ int main(int argc, char *argv[]) {
     //  -------------------------------------------------------------- //
     //                end getopts... DRIVER CODE HERE                 //
     //  ------------------------------------------------------------ //
+    std::cout << "Processing orders...\n"; // print before we begin our reads
 
     // prelim cin for our info
-    std::string line = "";
-    int traders = 0;
-    int stocks = 0;
+    std::string comment = "";
+    std::string in_mode = "";
+    uint32_t traders = 0;
+    uint32_t stocks = 0;
 
-    std::getline(std::cin, line); // gets rid of comment
-    std::getline(std::cin, line); // reads mode
-    std::cin >> traders >> stocks; // reads number of traders and stocks
+    std::getline(std::cin, comment); // gets rid of comment
+
+    std::cin >> comment >> in_mode; // use comment to get the "Mode: "
+
+    std::cin >> comment >> traders >> comment >> stocks; // reads number of traders and stocks
     std::stringstream ss; // creates a stream if we have PR mode
 
     // create an instance of Market Class, "market"
     Market market(stocks, traders, verbose, median, traderInfo, timeTravelers);
 
-    if (line == "TL") { // process the rest of our cin stream
-        ss << std::cin.rdbuf();  // Read all data from std::cin into the stringstream
-        market.proccess_input(ss);
-        return;
-    } else if (line == "PR") { // proccess PR mode
+    if (in_mode == "TL") { // process the rest of our cin stream
+        // ss << std::cin.rdbuf();  // Read all data from std::cin into the stringstream
+        market.process_input_TL();
+    } else if (in_mode == "PR") { // proccess PR mode
         std::string aux = ""; // used as junk read for preceeding symbols & words
-        size_t seed = 0;
-        size_t orders = 0;
-        size_t a_rate = 0;
+        uint32_t seed = 0;
+        uint32_t orders = 0;
+        uint32_t a_rate = 0;
         std::cin >> aux >> seed >> aux >> orders >> aux >> a_rate;
         P2random::PR_init(ss, seed, traders, stocks, orders, a_rate);
-        market.proccess_input(ss);
+        market.process_input_PR(ss);
     } else { // neither mode
         std::cerr << "Neither Input Mode Read\n";
         exit(1);
     }
 
-    market.printEndOfDaySummary(); // check ordering for summary!!!
+    market.printEndOfDaySummary(); 
 
-    if (traderInfo) {
-        market.printTraderInfo();
-    }
-    if (timeTravelers) {
-        market.printTimeTravelerInfo();
-    }
+    // print Info/TT iff the mode is specified
+    if (traderInfo) market.printTraderInfo();
+    if (timeTravelers) market.printTimeTravelerInfo();
 
     return 0;
 }

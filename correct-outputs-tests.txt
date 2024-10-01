@@ -1,0 +1,18 @@
+Correct output: (test-1-m.txt)
+Processing orders...
+Median match price of Stock 0 at time 1 is $120
+Median match price of Stock 0 at time 2 is $120
+Median match price of Stock 0 at time 3 is $120
+Median match price of Stock 0 at time 4 is $120
+Median match price of Stock 0 at time 5 is $120
+Median match price of Stock 0 at time 6 is $120
+Median match price of Stock 0 at time 7 is $120
+Median match price of Stock 1 at time 7 is $87
+Median match price of Stock 0 at time 8 is $120
+Median match price of Stock 1 at time 8 is $87
+Median match price of Stock 0 at time 9 is $120
+Median match price of Stock 1 at time 9 is $87
+---End of Day---
+Trades Completed: 5
+
+------------------------------------------------

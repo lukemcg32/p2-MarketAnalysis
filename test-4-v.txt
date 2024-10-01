@@ -1,7 +1,14 @@
-COMMENT: Spec Example, PR mode generating the same 12 orders.
-MODE: PR
-NUM_TRADERS: 4
-NUM_STOCKS: 15
-RANDOM_SEED: 111
-NUMBER_OF_ORDERS: 30
-ARRIVAL_RATE: 10
+COMMENT: Testing multiple trades on the same stock to evaluate median calculations
+MODE: TL
+NUM_TRADERS: 3
+NUM_STOCKS: 2
+0 SELL T0 S0 $200 #15
+1 SELL T1 S0 $150 #10
+2 BUY T2 S0 $175 #8
+3 BUY T0 S0 $160 #20
+4 SELL T1 S0 $180 #5
+5 BUY T2 S0 $190 #12
+6 SELL T0 S0 $170 #14
+7 BUY T1 S0 $155 #9
+8 SELL T2 S0 $165 #11
+9 BUY T0 S0 $185 #7

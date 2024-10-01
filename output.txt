@@ -1,0 +1,11 @@
+Processing orders...
+Trader 0 purchased 2 shares of Stock 1 from Trader 2 for $50/share
+---End of Day---
+Trades Completed: 1
+---Trader Info---
+Trader 0 bought 2 and sold 0 for a net transfer of $-100
+Trader 1 bought 0 and sold 0 for a net transfer of $0
+Trader 2 bought 0 and sold 2 for a net transfer of $100
+---Time Travelers---
+A time traveler could not make a profit on Stock 0
+A time traveler could not make a profit on Stock 1
