@@ -1,0 +1,14 @@
+COMMENT: Small range of orders with frequent price updates for median checks
+MODE: TL
+NUM_TRADERS: 3
+NUM_STOCKS: 1
+0 SELL T0 S0 $5 #10
+1 BUY T1 S0 $5 #5
+2 SELL T2 S0 $5 #8
+2 BUY T0 S0 $5 #7
+2 SELL T1 S0 $5 #6
+2 BUY T2 S0 $5 #4
+3 SELL T0 S0 $5 #9
+4 BUY T1 S0 $5 #10
+6 SELL T2 S0 $5 #2
+6 BUY T0 S0 $5 #3

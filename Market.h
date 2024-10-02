@@ -166,15 +166,13 @@ void Market::process_input_TL() {
     uint32_t timestamp = 0;
     std::string buySell = "";
     char aux = '\0';
-    std::string junk = "";
     uint32_t traderID = 0;
     uint32_t stockID = 0;
     uint32_t price = 0;
     uint32_t quantity = 0;
 
     // std::cout << "about to start looping\n";
-    while (std::cin >> junk) { // time stamp auto read by while loop
-        // std::cout << junk << "\n";
+    while (std::cin >> timestamp) { // time stamp auto read by while loop
 
         std::cin >> buySell >> aux >> traderID >> aux 
             >> stockID >> aux >> price >> aux >> quantity; // check that read works!!
@@ -236,7 +234,10 @@ void Market::process_input_TL() {
             matchOrders(stockID);
         }
     } // while
-} // process_inpit_TL
+
+    // Call outputMedianPrices one last time for the final timestamp
+    if (median) outputMedianPrices(currentTime);
+} // process_input_TL
 
 void Market::process_input_PR (std::stringstream &ss) {
     uint32_t timestamp = 0;
@@ -491,8 +492,8 @@ void Market::printTimeTravelerInfo() {
                       << curr.buy_price << " and sell it at time " <<  curr.sell_time << " for $" << curr.sell_price << "\n";
         } 
         else { // else, we have no TT info avaliable for the stock we're at
-            std::cout << stockID << " mode: " << curr.mode << " buy_time: " << curr.buy_time << " buy_price: "
-                      << curr.buy_price << " sell_time: " <<  curr.sell_time << " sel__price: " << curr.sell_price << "\n";
+            // std::cout << stockID << " mode: " << curr.mode << " buy_time: " << curr.buy_time << " buy_price: "
+            //           << curr.buy_price << " sell_time: " <<  curr.sell_time << " sel__price: " << curr.sell_price << "\n";
             std::cout << "A time traveler could not make a profit on Stock " << stockID << "\n";
         }
     } // for

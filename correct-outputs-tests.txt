@@ -16,3 +16,15 @@ Median match price of Stock 1 at time 9 is $87
 Trades Completed: 5
 
 ------------------------------------------------
+
+Correct output: (test-2-t.txt)
+Processing orders...
+---End of Day---
+Trades Completed: 4
+---Time Travelers---
+A time traveler would buy Stock 0 at time 10 for $496 and sell it at time 12 for $778
+A time traveler would buy Stock 1 at time 1 for $239 and sell it at time 5 for $706
+
+------------------------------------------------------------
+
+fix: 3,4,5

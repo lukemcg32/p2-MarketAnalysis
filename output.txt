@@ -1,25 +1,6 @@
 Processing orders...
-Trader 0 purchased 15 shares of Stock 0 from Trader 1 for $120/share
-Trader 2 purchased 10 shares of Stock 0 from Trader 1 for $110/share
-Trader 4 purchased 18 shares of Stock 1 from Trader 3 for $130/share
-Trader 4 purchased 12 shares of Stock 1 from Trader 1 for $140/share
-Trader 0 purchased 10 shares of Stock 2 from Trader 2 for $90/share
-Trader 1 purchased 8 shares of Stock 0 from Trader 1 for $110/share
-Trader 4 purchased 17 shares of Stock 1 from Trader 0 for $140/share
-Trader 2 purchased 19 shares of Stock 1 from Trader 3 for $150/share
-Trader 4 purchased 6 shares of Stock 2 from Trader 1 for $92/share
-Trader 0 purchased 20 shares of Stock 0 from Trader 1 for $110/share
-Trader 3 purchased 15 shares of Stock 0 from Trader 2 for $120/share
-Trader 3 purchased 5 shares of Stock 0 from Trader 4 for $125/share
 ---End of Day---
-Trades Completed: 12
----Trader Info---
-Trader 0 bought 45 and sold 17 for a net transfer of $-2520
-Trader 1 bought 8 and sold 71 for a net transfer of $7332
-Trader 2 bought 29 and sold 25 for a net transfer of $-1250
-Trader 3 bought 20 and sold 37 for a net transfer of $2765
-Trader 4 bought 53 and sold 5 for a net transfer of $-6327
+Trades Completed: 4
 ---Time Travelers---
-A time traveler would buy Stock 0 at time 0 for $110 and sell it at time 0 for $130
-A time traveler would buy Stock 1 at time 0 for $120 and sell it at time 0 for $150
-A time traveler would buy Stock 2 at time 0 for $85 and sell it at time 0 for $92
+A time traveler would buy Stock 0 at time 8 for $627 and sell it at time 12 for $778
+A time traveler would buy Stock 1 at time 1 for $239 and sell it at time 5 for $706

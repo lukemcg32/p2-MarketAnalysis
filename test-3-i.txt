@@ -1,4 +1,4 @@
-COMMENT: Spec Example, PR mode generating the same 12 orders.
+COMMENT: Spec Example
 MODE: TL
 NUM_TRADERS: 4
 NUM_STOCKS: 3
