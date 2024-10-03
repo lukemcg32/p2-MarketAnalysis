@@ -79,7 +79,7 @@ struct time_traveler { // index in vector will be stock#
     size_t buy_time = 0;
     size_t buy_price = 0; // first price will be lower - used for buy info
     size_t sell_price = 0; // first price should be > 0 - used for sell price
-    size_t potential_buy_price = 0;
+    size_t potential_buy_price = UINT32_MAX;
     size_t potential_buy_time = 0;
 };
 
@@ -164,7 +164,7 @@ Market::Market(uint32_t numStocks_in, uint32_t numTraders_in, bool v, bool m, bo
 void Market::process_input_TL() {
     // std::cout << "in p_i\n";
     uint32_t timestamp = 0;
-    std::string buySell = "";
+    char buySell[5];
     char aux = '\0';
     uint32_t traderID = 0;
     uint32_t stockID = 0;
@@ -211,7 +211,7 @@ void Market::process_input_TL() {
 
 
         // CHECK REST
-        bool isBuy = (buySell == "BUY");
+        bool isBuy = (buySell[0] == 'B');
         // Order newOrder(timestamp, traderID, stockID, isBuy, price, quantity, arrivalCounter++);
 
         
@@ -383,20 +383,15 @@ void Market::matchOrders(uint32_t stockID) {
                       << trade_price << "/share\n";
         }
 
-        // Remove the order from the PQ if no more quantity
-        if (buyOrder.quantity == 0) buyPQ.pop();
-        if (sellOrder.quantity == 0) sellPQ.pop();
+        // // Remove the order from the PQ if no more quantity
+        // if (buyOrder.quantity == 0) buyPQ.pop();
+        // if (sellOrder.quantity == 0) sellPQ.pop();
 
         // other option... but I think ^^ is faster and just as accurate
-        // buyPQ.pop();
-        // sellPQ.pop();
-
-        // if (buyOrder.quantity > 0) {
-        //     buyPQ.push(buyOrder);
-        // }
-        // if (sellOrder.quantity > 0) {
-        //     sellPQ.push(sellOrder);
-        // }
+        buyPQ.pop();
+        sellPQ.pop();
+        if (buyOrder.quantity > 0) buyPQ.push(buyOrder);
+        if (sellOrder.quantity > 0) sellPQ.push(sellOrder);
 
     } // while
 } // match_orders
@@ -404,7 +399,7 @@ void Market::matchOrders(uint32_t stockID) {
 // Output median prices
 void Market::outputMedianPrices(uint32_t time) {
     for (uint32_t i = 0; i < numStocks; i++) {
-        MedianPriorityQueue curr = medianPQ[i];
+        auto& curr = medianPQ[i];
         uint32_t value = curr.getMedian();
 
         if (value == UINT32_MAX) continue; // if no median, then continue looping
@@ -422,7 +417,8 @@ void Market::updateTimeTravelers(const Order& order) {
     // !.isBuy means its a sell order (TT can buy it)
     if (!order.isBuy) {
         // if haven't bought yet OR this price is cheaper than what we bought for...
-        if (time_traveler_tracker[id].mode == 'n' || (time_traveler_tracker[id].mode == 'b' && time_traveler_tracker[id].buy_price < order.price)) {
+        if (time_traveler_tracker[id].mode == 'n' || (time_traveler_tracker[id].mode == 'b' 
+                                        && time_traveler_tracker[id].buy_price > order.price)) {
             time_traveler_tracker[id].buy_price = order.price;
             time_traveler_tracker[id].buy_time = order.timestamp;
             time_traveler_tracker[id].mode = 'b';
@@ -430,7 +426,7 @@ void Market::updateTimeTravelers(const Order& order) {
         }
 
         // if in c mode and price is cheaper than what we bought for... 
-        if ( (time_traveler_tracker[id].mode) == 'c' && (order.price < time_traveler_tracker[id].buy_price) ) {
+        if ( time_traveler_tracker[id].mode == 'c' && (order.price < time_traveler_tracker[id].buy_price) ) {
             time_traveler_tracker[id].potential_buy_price = order.price;
             time_traveler_tracker[id].potential_buy_time = order.timestamp;
             time_traveler_tracker[id].mode = 'p';
@@ -445,15 +441,15 @@ void Market::updateTimeTravelers(const Order& order) {
             return;
         }
         
-    } // if <we can buy>
+    } // if (we can buy)
 
-     // .isBuy (TT can sell to this fool)
-    if (order.isBuy) {
+    else {  // .isBuy (TT can sell to this fool)
         // if haven't bought anything yet
         if (time_traveler_tracker[id].mode == 'n') return;
 
         // if haven't sold yet and is selling for more than we bought for OR if we're in 'c' and its selling for more than we sold ours for
-        if ( (time_traveler_tracker[id].mode == 'b' && time_traveler_tracker[id].buy_price < order.price) || (time_traveler_tracker[id].mode == 'c' && time_traveler_tracker[id].sell_price < order.price) ) {
+        if ( (time_traveler_tracker[id].mode == 'b' && time_traveler_tracker[id].buy_price < order.price) || 
+             (time_traveler_tracker[id].mode == 'c' && time_traveler_tracker[id].sell_price < order.price) ) {
             time_traveler_tracker[id].sell_price = order.price;
             time_traveler_tracker[id].sell_time = order.timestamp;
             time_traveler_tracker[id].mode = 'c';
@@ -478,7 +474,7 @@ void Market::updateTimeTravelers(const Order& order) {
             return;
         }
 
-    } // if we can sell
+    } // else, we can sell
 } // updateTT
 
 // Time traveler info output
@@ -497,6 +493,7 @@ void Market::printTimeTravelerInfo() {
             std::cout << "A time traveler could not make a profit on Stock " << stockID << "\n";
         }
     } // for
+
 } //printTTinfo
 
 

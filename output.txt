@@ -1,6 +1,11 @@
 Processing orders...
 ---End of Day---
-Trades Completed: 4
----Time Travelers---
-A time traveler would buy Stock 0 at time 8 for $627 and sell it at time 12 for $778
-A time traveler would buy Stock 1 at time 1 for $239 and sell it at time 5 for $706
+Trades Completed: 6
+---Trader Info---
+Trader 0 bought 21000000 and sold 0 for a net transfer of $-15447854720
+Trader 1 bought 0 and sold 13000000 for a net transfer of $3258266000000
+Trader 2 bought 0 and sold 0 for a net transfer of $0
+Trader 3 bought 0 and sold 6000000 for a net transfer of $2576946000000
+Trader 4 bought 6000000 and sold 0 for a net transfer of $-2190589696
+Trader 5 bought 0 and sold 8000000 for a net transfer of $3433786000000
+Trader 6 bought 0 and sold 0 for a net transfer of $0

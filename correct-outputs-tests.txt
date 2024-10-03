@@ -1,4 +1,6 @@
 Correct output: (test-1-m.txt)
+
+
 Processing orders...
 Median match price of Stock 0 at time 1 is $120
 Median match price of Stock 0 at time 2 is $120
@@ -18,6 +20,8 @@ Trades Completed: 5
 ------------------------------------------------
 
 Correct output: (test-2-t.txt)
+
+
 Processing orders...
 ---End of Day---
 Trades Completed: 4
@@ -27,4 +31,3 @@ A time traveler would buy Stock 1 at time 1 for $239 and sell it at time 5 for $
 
 ------------------------------------------------------------
 
-fix: 3,4,5
