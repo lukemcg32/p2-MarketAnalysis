@@ -92,7 +92,6 @@ class MedianPriorityQueue {
     public:
         void insert(uint32_t num);
         uint32_t getMedian();
-        void clear();
 };
 
 // ----------------------------------------------------------------------- //
@@ -187,12 +186,7 @@ void Market::process_input_TL() {
         if (timestamp < currentTime) { // most likely error first :)
             std::cerr << "Error: Timestamps not non-decreasing.\n";
             exit(1);
-        } 
-        // if (timestamp < 0) {
-        //     std::cerr << "Error: Negative timestamp.\n";
-        //        exit(1);
-        // } 
-        if (traderID >= numTraders) {
+        } if (traderID >= numTraders) {
             std::cerr << "Error: Invalid trader ID.\n";
             exit(1);
         } if (stockID >= numStocks) {
@@ -265,12 +259,7 @@ void Market::process_input_PR (std::stringstream &ss) {
         if (timestamp < currentTime) { // most likely error first :)
             std::cerr << "Error: Timestamps not non-decreasing.\n";
             exit(1);
-        } 
-        // if (timestamp < 0) {
-        //     std::cerr << "Error: Negative timestamp.\n";
-        //        exit(1);
-        // } 
-        if (traderID >= numTraders) {
+        } if (traderID >= numTraders) {
             std::cerr << "Error: Invalid trader ID.\n";
             exit(1);
         } if (stockID >= numStocks) {
@@ -382,12 +371,6 @@ void Market::matchOrders(uint32_t stockID) {
                       << " from Trader " << sellOrder.traderID << " for $"
                       << trade_price << "/share\n";
         }
-
-        // // Remove the order from the PQ if no more quantity
-        // if (buyOrder.quantity == 0) buyPQ.pop();
-        // if (sellOrder.quantity == 0) sellPQ.pop();
-
-        // other option... but I think ^^ is faster and just as accurate
         buyPQ.pop();
         sellPQ.pop();
         if (buyOrder.quantity > 0) buyPQ.push(buyOrder);
@@ -406,7 +389,6 @@ void Market::outputMedianPrices(uint32_t time) {
 
         std::cout << "Median match price of Stock " << i << " at time " 
                   << time << " is $" << curr.getMedian() << "\n";
-        curr.clear();
     } 
 } // outputMedianPrices
 
@@ -534,15 +516,5 @@ uint32_t MedianPriorityQueue::getMedian() {
         return minHeap.top();
     }
 } // fastMedian - getMedian
-
-void MedianPriorityQueue::clear() {
-    while (!maxHeap.empty()) {
-        maxHeap.pop();
-    }
-    while (!minHeap.empty()) {
-        minHeap.pop();
-    }
-    return;
-} // fastmedian - clear()
 
 #endif // MARKET_HPP
