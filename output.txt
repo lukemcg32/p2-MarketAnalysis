@@ -1,15 +1,30 @@
 Processing orders...
-Median match price of Stock 0 at time 1 is $120
-Median match price of Stock 0 at time 2 is $120
-Median match price of Stock 0 at time 3 is $120
-Median match price of Stock 0 at time 4 is $120
-Median match price of Stock 0 at time 5 is $120
-Median match price of Stock 0 at time 6 is $120
-Median match price of Stock 0 at time 7 is $120
-Median match price of Stock 1 at time 7 is $87
-Median match price of Stock 0 at time 8 is $120
-Median match price of Stock 1 at time 8 is $87
-Median match price of Stock 0 at time 9 is $120
-Median match price of Stock 1 at time 9 is $87
+Trader 1 purchased 24 shares of Stock 1 from Trader 0 for $239/share
+Median match price of Stock 1 at time 2 is $239
+Median match price of Stock 1 at time 3 is $239
+Median match price of Stock 1 at time 4 is $239
+Median match price of Stock 1 at time 5 is $239
+Median match price of Stock 1 at time 6 is $239
+Median match price of Stock 1 at time 7 is $239
+Median match price of Stock 1 at time 8 is $239
+Median match price of Stock 1 at time 9 is $239
+Median match price of Stock 1 at time 10 is $239
+Trader 0 purchased 9 shares of Stock 1 from Trader 0 for $706/share
+Trader 2 purchased 19 shares of Stock 1 from Trader 0 for $631/share
+Median match price of Stock 1 at time 11 is $631
+Trader 1 purchased 1 shares of Stock 0 from Trader 0 for $496/share
+Median match price of Stock 0 at time 12 is $496
+Median match price of Stock 1 at time 12 is $631
+Median match price of Stock 0 at time 13 is $496
+Median match price of Stock 1 at time 13 is $631
+Median match price of Stock 0 at time 14 is $496
+Median match price of Stock 1 at time 14 is $631
 ---End of Day---
-Trades Completed: 5
+Trades Completed: 4
+---Trader Info---
+Trader 0 bought 9 and sold 53 for a net transfer of $18221
+Trader 1 bought 25 and sold 0 for a net transfer of $-6232
+Trader 2 bought 19 and sold 0 for a net transfer of $-11989
+---Time Travelers---
+A time traveler would buy Stock 0 at time 10 for $496 and sell it at time 12 for $778
+A time traveler would buy Stock 1 at time 1 for $239 and sell it at time 5 for $706

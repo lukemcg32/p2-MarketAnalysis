@@ -75,6 +75,7 @@ struct time_traveler { // index in vector will be stock#
         mode = 'c' || mode = 'p' in order to find a time_traveler for the stock */
     char mode = 'n';
 
+    size_t aT = 0; // arrival time
     size_t sell_time = 0;
     size_t buy_time = 0;
     size_t buy_price = 0; // first price will be lower - used for buy info
@@ -132,7 +133,7 @@ private:
     // private member functions
     void matchOrders(uint32_t stockID); // x
     void outputMedianPrices(uint32_t time); // x
-    void updateTimeTravelers(const Order& order); // x
+    void updateTimeTravelers(const Order& order, uint32_t counter); // x
 
 };
     
@@ -144,9 +145,11 @@ private:
 Market::Market(uint32_t numStocks_in, uint32_t numTraders_in, bool v, bool m, bool tI, bool tT) : 
         numStocks(numStocks_in), numTraders(numTraders_in), verbose(v), median(m),
         traderInfo(tI), timeTravelers(tT), currentTime(0), tradesCompleted(0), 
-        arrivalCounter(0), traders(numTraders, Trader(0)), 
-        buyOrders(numStocks), sellOrders(numStocks) {
-        
+        arrivalCounter(0), traders(numTraders, Trader(0)) {
+
+    // reserve the space because we will use emplace and not access with [ ]
+    buyOrders.reserve(numStocks); 
+    sellOrders.reserve(numStocks);
 
     // resize our traveler, info & median vectors IF AND ONLY IF the mode is used, else its a waste...
     if (timeTravelers) time_traveler_tracker.resize(numStocks);
@@ -213,18 +216,15 @@ void Market::process_input_TL() {
         // Update time traveler data
         if (timeTravelers) {
             Order newOrder(timestamp, traderID, stockID, isBuy, price, quantity, arrivalCounter++);
-            updateTimeTravelers(newOrder);
-            // updateTimeTravelers.emplace(timestamp, traderID, stockID, isBuy, price, quantity, arrivalCounter++);
+            updateTimeTravelers(newOrder, arrivalCounter++);
         }
 
         // Add order to market and attempt matching
         if (isBuy) {
             buyOrders[stockID].emplace(timestamp, traderID, stockID, isBuy, price, quantity, arrivalCounter++);
-            // buyOrders[stockID].push(newOrder);
             matchOrders(stockID);
         } else {
             sellOrders[stockID].emplace(timestamp, traderID, stockID, isBuy, price, quantity, arrivalCounter++);
-            // sellOrders[stockID].push(newOrder);
             matchOrders(stockID);
         }
     } // while
@@ -283,15 +283,15 @@ void Market::process_input_PR (std::stringstream &ss) {
     
         // Update time traveler data
         if (timeTravelers) {
-            updateTimeTravelers(newOrder);
+            updateTimeTravelers(newOrder, arrivalCounter++);
         }
 
         // Add order to market and attempt matching
         if (isBuy) {
-            buyOrders[stockID].push(newOrder);
+            buyOrders[stockID].emplace(timestamp, traderID, stockID, isBuy, price, quantity, arrivalCounter++);
             matchOrders(stockID);
         } else {
-            sellOrders[stockID].push(newOrder);
+            sellOrders[stockID].emplace(timestamp, traderID, stockID, isBuy, price, quantity, arrivalCounter++);
             matchOrders(stockID);
         }
     } // while
@@ -382,19 +382,21 @@ void Market::matchOrders(uint32_t stockID) {
 // Output median prices
 void Market::outputMedianPrices(uint32_t time) {
     for (uint32_t i = 0; i < numStocks; i++) {
-        auto& curr = medianPQ[i];
-        uint32_t value = curr.getMedian();
+        // auto& curr = medianPQ[i];
+        uint32_t value = medianPQ[i].getMedian();
 
         if (value == UINT32_MAX) continue; // if no median, then continue looping
 
         std::cout << "Median match price of Stock " << i << " at time " 
-                  << time << " is $" << curr.getMedian() << "\n";
+                  << time << " is $" << value << "\n";
     } 
 } // outputMedianPrices
 
 // Update time traveler data
-void Market::updateTimeTravelers(const Order& order) {
+void Market::updateTimeTravelers(const Order& order, uint32_t counter) {
     uint32_t id = order.stockID;
+    
+
 
     // !.isBuy means its a sell order (TT can buy it)
     if (!order.isBuy) {
@@ -403,6 +405,7 @@ void Market::updateTimeTravelers(const Order& order) {
                                         && time_traveler_tracker[id].buy_price > order.price)) {
             time_traveler_tracker[id].buy_price = order.price;
             time_traveler_tracker[id].buy_time = order.timestamp;
+            time_traveler_tracker[id].aT = counter;
             time_traveler_tracker[id].mode = 'b';
             return;
         }
@@ -411,6 +414,7 @@ void Market::updateTimeTravelers(const Order& order) {
         if ( time_traveler_tracker[id].mode == 'c' && (order.price < time_traveler_tracker[id].buy_price) ) {
             time_traveler_tracker[id].potential_buy_price = order.price;
             time_traveler_tracker[id].potential_buy_time = order.timestamp;
+            time_traveler_tracker[id].aT = counter;
             time_traveler_tracker[id].mode = 'p';
             return;
         }
@@ -419,19 +423,25 @@ void Market::updateTimeTravelers(const Order& order) {
         if (time_traveler_tracker[id].mode == 'p' && time_traveler_tracker[id].potential_buy_price > order.price) {
             time_traveler_tracker[id].potential_buy_price = order.price;
             time_traveler_tracker[id].potential_buy_time = order.timestamp;
+            time_traveler_tracker[id].aT = counter;
             // already in potential mode
             return;
         }
         
     } // if (we can buy)
 
+
+
+
+    // tomorrow figure out the arrival counter
+
     else {  // .isBuy (TT can sell to this fool)
         // if haven't bought anything yet
         if (time_traveler_tracker[id].mode == 'n') return;
 
         // if haven't sold yet and is selling for more than we bought for OR if we're in 'c' and its selling for more than we sold ours for
-        if ( (time_traveler_tracker[id].mode == 'b' && time_traveler_tracker[id].buy_price < order.price) || 
-             (time_traveler_tracker[id].mode == 'c' && time_traveler_tracker[id].sell_price < order.price) ) {
+        if ( ((time_traveler_tracker[id].mode == 'b' && time_traveler_tracker[id].buy_price < order.price) || 
+             (time_traveler_tracker[id].mode == 'c' && time_traveler_tracker[id].sell_price < order.price)) && time_traveler_tracker[id].aT < counter) {
             time_traveler_tracker[id].sell_price = order.price;
             time_traveler_tracker[id].sell_time = order.timestamp;
             time_traveler_tracker[id].mode = 'c';
@@ -440,19 +450,13 @@ void Market::updateTimeTravelers(const Order& order) {
 
         // if in potential mode and an order comes along that can earn more than what we already have, change it to our main and put into 'c'
         // !!!might cause issues with unsigned ints!!!
-        if ( time_traveler_tracker[id].mode == 'p' && (order.price - time_traveler_tracker[id].potential_buy_price) > (time_traveler_tracker[id].sell_price - time_traveler_tracker[id].buy_price) ) {
+        if ( time_traveler_tracker[id].mode == 'p' && (order.price - time_traveler_tracker[id].potential_buy_price) > (time_traveler_tracker[id].sell_price 
+                                        - time_traveler_tracker[id].buy_price) && time_traveler_tracker[id].aT < counter) {
             time_traveler_tracker[id].buy_price = time_traveler_tracker[id].potential_buy_price;
             time_traveler_tracker[id].buy_time = time_traveler_tracker[id].potential_buy_time;
             time_traveler_tracker[id].sell_price = order.price;
             time_traveler_tracker[id].sell_time = order.timestamp;
             time_traveler_tracker[id].mode = 'c';
-            return;
-        }
-
-        // if in potential mode and a lesser bid value comes through
-        if (time_traveler_tracker[id].mode == 'p' && time_traveler_tracker[id].potential_buy_price > order.price) {
-            time_traveler_tracker[id].potential_buy_price = order.price;
-            time_traveler_tracker[id].potential_buy_time = order.timestamp;
             return;
         }
 
