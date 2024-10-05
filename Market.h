@@ -75,6 +75,7 @@ struct time_traveler { // index in vector will be stock#
         mode = 'c' || mode = 'p' in order to find a time_traveler for the stock */
     char mode = 'n';
 
+    size_t aT = 0; // arrival time
     size_t sell_time = 0;
     size_t buy_time = 0;
     size_t buy_price = 0; // first price will be lower - used for buy info
@@ -92,7 +93,6 @@ class MedianPriorityQueue {
     public:
         void insert(uint32_t num);
         uint32_t getMedian();
-        void clear();
 };
 
 // ----------------------------------------------------------------------- //
@@ -133,7 +133,7 @@ private:
     // private member functions
     void matchOrders(uint32_t stockID); // x
     void outputMedianPrices(uint32_t time); // x
-    void updateTimeTravelers(const Order& order); // x
+    void updateTimeTravelers(const Order& order, uint32_t counter); // x
 
 };
     
@@ -212,14 +212,13 @@ void Market::process_input_TL() {
 
         // CHECK REST
         bool isBuy = (buySell[0] == 'B');
-        // Order newOrder(timestamp, traderID, stockID, isBuy, price, quantity, arrivalCounter++);
 
         
     
         // Update time traveler data
         if (timeTravelers) {
             Order newOrder(timestamp, traderID, stockID, isBuy, price, quantity, arrivalCounter++);
-            updateTimeTravelers(newOrder);
+            updateTimeTravelers(newOrder, arrivalCounter);
             // updateTimeTravelers.emplace(timestamp, traderID, stockID, isBuy, price, quantity, arrivalCounter++);
         }
 
@@ -293,7 +292,7 @@ void Market::process_input_PR (std::stringstream &ss) {
 
         if (timeTravelers) {
             Order newOrder(timestamp, traderID, stockID, isBuy, price, quantity, arrivalCounter++);
-            updateTimeTravelers(newOrder);
+            updateTimeTravelers(newOrder, arrivalCounter);
         }
 
         // Add order to market and attempt matching
@@ -404,13 +403,14 @@ void Market::outputMedianPrices(uint32_t time) {
 
         std::cout << "Median match price of Stock " << i << " at time " 
                   << time << " is $" << value << "\n";
-        // curr.clear();
     } 
 } // outputMedianPrices
 
 // Update time traveler data
-void Market::updateTimeTravelers(const Order& order) {
+void Market::updateTimeTravelers(const Order& order, uint32_t counter) {
     uint32_t id = order.stockID;
+    
+
 
     // !.isBuy means its a sell order (TT can buy it)
     if (!order.isBuy) {
@@ -419,6 +419,7 @@ void Market::updateTimeTravelers(const Order& order) {
                                         && time_traveler_tracker[id].buy_price > order.price)) {
             time_traveler_tracker[id].buy_price = order.price;
             time_traveler_tracker[id].buy_time = order.timestamp;
+            time_traveler_tracker[id].aT = counter;
             time_traveler_tracker[id].mode = 'b';
             return;
         }
@@ -427,6 +428,7 @@ void Market::updateTimeTravelers(const Order& order) {
         if ( time_traveler_tracker[id].mode == 'c' && (order.price < time_traveler_tracker[id].buy_price) ) {
             time_traveler_tracker[id].potential_buy_price = order.price;
             time_traveler_tracker[id].potential_buy_time = order.timestamp;
+            time_traveler_tracker[id].aT = counter;
             time_traveler_tracker[id].mode = 'p';
             return;
         }
@@ -435,6 +437,7 @@ void Market::updateTimeTravelers(const Order& order) {
         if (time_traveler_tracker[id].mode == 'p' && time_traveler_tracker[id].potential_buy_price > order.price) {
             time_traveler_tracker[id].potential_buy_price = order.price;
             time_traveler_tracker[id].potential_buy_time = order.timestamp;
+            time_traveler_tracker[id].aT = counter;
             // already in potential mode
             return;
         }
@@ -446,8 +449,8 @@ void Market::updateTimeTravelers(const Order& order) {
         if (time_traveler_tracker[id].mode == 'n') return;
 
         // if haven't sold yet and is selling for more than we bought for OR if we're in 'c' and its selling for more than we sold ours for
-        if ( (time_traveler_tracker[id].mode == 'b' && time_traveler_tracker[id].buy_price < order.price) || 
-             (time_traveler_tracker[id].mode == 'c' && time_traveler_tracker[id].sell_price < order.price) ) {
+        if ( ((time_traveler_tracker[id].mode == 'b' && time_traveler_tracker[id].buy_price < order.price) || 
+             (time_traveler_tracker[id].mode == 'c' && time_traveler_tracker[id].sell_price < order.price)) && time_traveler_tracker[id].aT < counter) {
             time_traveler_tracker[id].sell_price = order.price;
             time_traveler_tracker[id].sell_time = order.timestamp;
             time_traveler_tracker[id].mode = 'c';
@@ -456,7 +459,8 @@ void Market::updateTimeTravelers(const Order& order) {
 
         // if in potential mode and an order comes along that can earn more than what we already have, change it to our main and put into 'c'
         // !!!might cause issues with unsigned ints!!!
-        if ( time_traveler_tracker[id].mode == 'p' && (order.price - time_traveler_tracker[id].potential_buy_price) > (time_traveler_tracker[id].sell_price - time_traveler_tracker[id].buy_price) ) {
+        if ( time_traveler_tracker[id].mode == 'p' && (order.price - time_traveler_tracker[id].potential_buy_price) > (time_traveler_tracker[id].sell_price 
+                                        - time_traveler_tracker[id].buy_price) && time_traveler_tracker[id].aT < counter) {
             time_traveler_tracker[id].buy_price = time_traveler_tracker[id].potential_buy_price;
             time_traveler_tracker[id].buy_time = time_traveler_tracker[id].potential_buy_time;
             time_traveler_tracker[id].sell_price = order.price;
@@ -465,15 +469,9 @@ void Market::updateTimeTravelers(const Order& order) {
             return;
         }
 
-        // if in potential mode and a lesser bid value comes through
-        if (time_traveler_tracker[id].mode == 'p' && time_traveler_tracker[id].potential_buy_price > order.price) {
-            time_traveler_tracker[id].potential_buy_price = order.price;
-            time_traveler_tracker[id].potential_buy_time = order.timestamp;
-            return;
-        }
-
     } // else, we can sell
 } // updateTT
+
 
 // Time traveler info output
 void Market::printTimeTravelerInfo() {
@@ -532,15 +530,5 @@ uint32_t MedianPriorityQueue::getMedian() {
         return minHeap.top();
     }
 } // fastMedian - getMedian
-
-void MedianPriorityQueue::clear() {
-    while (!maxHeap.empty()) {
-        maxHeap.pop();
-    }
-    while (!minHeap.empty()) {
-        minHeap.pop();
-    }
-    return;
-} // fastmedian - clear()
 
 #endif // MARKET_HPP
