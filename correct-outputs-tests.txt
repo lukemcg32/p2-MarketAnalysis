@@ -31,3 +31,14 @@ A time traveler would buy Stock 1 at time 1 for $239 and sell it at time 5 for $
 
 ------------------------------------------------------------
 
+
+correct output: (test-9-t.txt) 
+
+
+Processing orders...
+---End of Day---
+Trades Completed: 4
+---Time Travelers---
+A time traveler would buy Stock 0 at time 2 for $74 and sell it at time 3 for $87
+A time traveler would buy Stock 1 at time 2 for $28 and sell it at time 2 for $69
+

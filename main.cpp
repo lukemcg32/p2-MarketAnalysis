@@ -16,6 +16,7 @@
     };
 
 int main(int argc, char *argv[]) {
+    std::ios_base::sync_with_stdio(false);
     bool verbose = false;
     bool median = false;
     bool traderInfo = false;
